@@ -3,6 +3,54 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+## Overview
+
+This project makes use of a PID controller to steer a car, when the distance from the center of the road is known.
+The objective of the project is to continously update steering angles such that the car always stays in the center of the road.
+
+## PID Controller
+
+PID stands for (P)roportional (I)ntegral and (D)erivative.
+This type of controller will help us keep the CTE (cross-track error) as small as possible.
+
+```
+cte = road_center_position - car_position
+steer_angle = P * cte + I * sum(cte) + D * time-derivate(cte)
+```
+
+##Parameter optimisation
+
+The easiest way is to tune the P, I, and D hyperparameters by hand.
+For this project, the values for the same were fine-tuned to:
+
+P = 0.2
+I = 0.00443
+D = 3
+
+##Final Solution
+
+The PID for steering-angle has been tuned for a velocity of 25 mph, and in some parts of the road manages to touch 40-50 mph.
+Above that, the steering performance degrades.
+
+```
+double speed_factor = 25.0 / (speed + 1.0);
+steer_value = speed_factor * pid_value;
+```
+
+Apart from the steering-angle controller, I utilise another PID controller to feedback velocity.
+This helps in cases where there are sharp turns, allowing the car to slow down.
+
+```
+pid_speed.Init(0.4, 0, 3.5);
+double throttle = 0.5 + pid_speed_value;
+```
+
+## Disadvantages
+
+The PID controller needs to be very finely tuned and has to have a good update-rate for higher speeds.
+Also, because of the way the algorithm for the PID controller works, the controller behaves reactively, since it has
+no vision of the future parts of the road [humans can see and anticipate required steering angle and speed].
+
 ## Dependencies
 
 * cmake >= 3.5
