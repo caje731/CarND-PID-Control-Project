@@ -32,10 +32,18 @@ int main()
 {
   uWS::Hub h;
 
+  // this pid is for steering the car
   PID pid;
-  // TODO: Initialize the pid variable.
+  // this pid is for vehicle speed control
+  // it slows the vehicle if it gets big cte
+  // probably in highly curved turns
+  PID pid_speed;
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // parameters optimized by hand
+  pid.Init(0.2, 0.00443, 3);
+  pid_speed.Init(0.4, 0, 3.5);
+
+  h.onMessage([&pid, &pid_speed](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -57,15 +65,19 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
+          pid.UpdateError(cte);
+          double speed_factor = 25.0 / (speed + 1.0);
+          steer_value = speed_factor * pid.TotalError();
           
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          pid_speed.UpdateError(fabs(cte));
+          double throttle = 0.5 + pid_speed.TotalError();
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = throttle;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // DEBUG
+//          std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
